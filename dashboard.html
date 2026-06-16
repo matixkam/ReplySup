@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ReplySup – Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--black:#0d0d0d;--white:#f7f6f2;--accent:#c8f135;--mid:#1a1a1a;--border:#2a2a2a;--muted:#666;--red:#ff5555}
+body{background:var(--black);color:var(--white);font-family:'Inter',sans-serif;display:flex;min-height:100vh}
+.sidebar{width:220px;min-height:100vh;background:var(--mid);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:1.5rem 1rem;position:fixed;top:0;left:0;bottom:0}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.2rem;padding:0 0.5rem 1.5rem;border-bottom:1px solid var(--border);margin-bottom:1rem}
+.logo span{color:var(--accent)}
+.nav-item{display:flex;align-items:center;gap:0.6rem;padding:0.6rem 0.75rem;border-radius:8px;font-size:0.875rem;font-weight:500;color:#888;cursor:pointer;transition:all 0.15s;margin-bottom:0.25rem;text-decoration:none;border:none;background:none;width:100%;text-align:left}
+.nav-item:hover,.nav-item.active{background:#222;color:var(--white)}
+.sidebar-bottom{margin-top:auto;padding-top:1rem;border-top:1px solid var(--border)}
+.user-pill{display:flex;align-items:center;gap:0.6rem;padding:0.5rem 0.75rem;font-size:0.8rem;color:#666}
+.avatar-sm{width:28px;height:28px;border-radius:50%;background:#333;display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:700;color:var(--accent);flex-shrink:0}
+.main{margin-left:220px;flex:1;padding:2rem 2.5rem;max-width:900px}
+.page-header{margin-bottom:2rem}
+.page-header h1{font-family:'Syne',sans-serif;font-weight:800;font-size:1.6rem;letter-spacing:-0.02em}
+.page-header p{color:#888;font-size:0.9rem;margin-top:0.25rem}
+.status-banner{background:#111f11;border:1px solid #2a4a2a;border-radius:12px;padding:1rem 1.25rem;margin-bottom:1.5rem;display:flex;align-items:center;justify-content:space-between}
+.status-banner.inactive{background:#1f1111;border-color:#4a2a2a}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--accent);animation:pulse 2s infinite;flex-shrink:0}
+.dot.off{background:var(--red);animation:none}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+.status-left{display:flex;align-items:center;gap:0.75rem}
+.status-text{font-size:0.875rem;font-weight:600}
+.status-sub{font-size:0.75rem;color:#888;margin-top:0.1rem}
+.toggle-btn{background:var(--accent);color:var(--black);border:none;padding:0.4rem 1rem;border-radius:100px;font-size:0.8rem;font-weight:600;cursor:pointer}
+.toggle-btn.off{background:#333;color:#888}
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.5rem}
+.stat-card{background:var(--mid);border:1px solid var(--border);border-radius:12px;padding:1.25rem}
+.stat-label{font-size:0.75rem;color:#888;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.5rem}
+.stat-value{font-family:'Syne',sans-serif;font-size:2rem;font-weight:800;letter-spacing:-0.02em}
+.stat-value.green{color:var(--accent)}
+.stat-sub{font-size:0.75rem;color:#666;margin-top:0.25rem}
+.section{background:var(--mid);border:1px solid var(--border);border-radius:16px;padding:1.5rem;margin-bottom:1.25rem}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem}
+.section-title{font-weight:600;font-size:0.95rem}
+.reply-item{padding:1rem 0;border-bottom:1px solid var(--border)}
+.reply-item:last-child{border-bottom:none}
+.reply-meta{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem}
+.reply-reviewer{font-size:0.85rem;font-weight:600}
+.reply-time{font-size:0.75rem;color:#666}
+.stars{color:#f5a623;font-size:0.8rem}
+.reply-original{font-size:0.8rem;color:#888;margin-bottom:0.4rem;line-height:1.5}
+.reply-sent{font-size:0.8rem;color:#ccc;line-height:1.5}
+.reply-sent::before{content:'↳ ';color:var(--accent);font-weight:700}
+.badge{font-size:0.7rem;font-weight:600;padding:0.15rem 0.5rem;border-radius:100px;display:inline-flex;align-items:center;gap:0.3rem;margin-top:0.4rem}
+.badge.green{background:#1a2e1a;color:var(--accent)}
+.badge.yellow{background:#2a2a1a;color:#f5a623}
+.form-group{margin-bottom:1rem}
+.form-label{font-size:0.8rem;font-weight:500;color:#aaa;margin-bottom:0.4rem;display:block}
+.form-input,.form-select,.form-textarea{width:100%;background:#111;border:1px solid var(--border);color:var(--white);padding:0.7rem 1rem;border-radius:8px;font-size:0.875rem;outline:none;font-family:'Inter',sans-serif;transition:border-color 0.2s}
+.form-input:focus,.form-textarea:focus{border-color:var(--accent)}
+.form-textarea{resize:vertical;min-height:80px}
+.form-hint{font-size:0.75rem;color:#666;margin-top:0.35rem}
+.save-btn{background:var(--accent);color:var(--black);border:none;padding:0.65rem 1.5rem;border-radius:8px;font-weight:600;font-size:0.875rem;cursor:pointer;font-family:'Inter',sans-serif}
+.logout-btn{background:transparent;border:1px solid var(--border);color:#888;padding:0.4rem 0.75rem;border-radius:8px;font-size:0.75rem;cursor:pointer;font-family:'Inter',sans-serif;width:100%;margin-top:0.5rem}
+.logout-btn:hover{background:#222;color:var(--white)}
+.page{display:none}
+.page.active{display:block}
+#loading{display:flex;align-items:center;justify-content:center;min-height:100vh;width:100%;font-size:0.9rem;color:#888}
+</style>
+</head>
+<body>
+
+<div id="loading">Loading...</div>
+
+<aside class="sidebar" id="sidebar" style="display:none">
+  <div class="logo">Reply<span>Sup</span></div>
+  <button class="nav-item active" onclick="showPage('dashboard',this)">📊 Dashboard</button>
+  <button class="nav-item" onclick="showPage('settings',this)">⚙️ Settings</button>
+  <button class="nav-item" onclick="showPage('replies',this)">💬 Recent replies</button>
+  <div class="sidebar-bottom">
+    <div class="user-pill">
+      <div class="avatar-sm" id="avatar">?</div>
+      <div>
+        <div style="font-size:0.8rem;color:#ccc;font-weight:500" id="user-email">...</div>
+        <div style="font-size:0.7rem;color:#555">Free trial</div>
+      </div>
+    </div>
+    <button class="logout-btn" onclick="handleLogout()">Sign out</button>
+  </div>
+</aside>
+
+<main class="main" id="main" style="display:none">
+
+  <div id="page-dashboard" class="page active">
+    <div class="page-header">
+      <h1>Dashboard</h1>
+      <p>Hey, Sup is keeping an eye on things for you.</p>
+    </div>
+    <div class="status-banner" id="statusBanner">
+      <div class="status-left">
+        <div class="dot" id="statusDot"></div>
+        <div>
+          <div class="status-text" id="statusText">Waiting to connect Google Business</div>
+          <div class="status-sub" id="statusSub">Go to Settings to get started</div>
+        </div>
+      </div>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-label">Replies sent</div><div class="stat-value green">0</div><div class="stat-sub">last 30 days</div></div>
+      <div class="stat-card"><div class="stat-label">Avg. response time</div><div class="stat-value">—</div><div class="stat-sub">industry avg: 2 days</div></div>
+      <div class="stat-card"><div class="stat-label">Reviews replied</div><div class="stat-value green">—</div><div class="stat-sub">connect Google to start</div></div>
+    </div>
+    <div class="section">
+      <div class="section-header"><div class="section-title">Latest replies</div></div>
+      <p style="color:#666;font-size:0.875rem;padding:1rem 0">No replies yet. Connect your Google Business in Settings and Sup will get to work.</p>
+    </div>
+  </div>
+
+  <div id="page-settings" class="page">
+    <div class="page-header">
+      <h1>Settings</h1>
+      <p>Tell Sup about your business so replies sound like you.</p>
+    </div>
+    <div class="section">
+      <div class="section-header"><div class="section-title">Business info</div></div>
+      <div class="form-group">
+        <label class="form-label">Business name</label>
+        <input type="text" class="form-input" id="biz-name" placeholder="e.g. The Blue Plate Cafe">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Business type</label>
+        <select class="form-select" id="biz-type">
+          <option value="">Select type...</option>
+          <option>Restaurant / Cafe</option>
+          <option>Hair salon / Barber</option>
+          <option>Beauty / Spa</option>
+          <option>Retail shop</option>
+          <option>Hotel / Accommodation</option>
+          <option>Other local business</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Reply tone</label>
+        <select class="form-select" id="biz-tone">
+          <option value="">Select tone...</option>
+          <option>Friendly and warm</option>
+          <option>Professional and polite</option>
+          <option>Casual and fun</option>
+          <option>Short and to the point</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Anything to always mention? (optional)</label>
+        <textarea class="form-textarea" id="biz-mention" placeholder="e.g. mention our loyalty card, invite them to follow us on Instagram..."></textarea>
+        <div class="form-hint">Sup will naturally weave this into replies where it fits.</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Anything to never say? (optional)</label>
+        <textarea class="form-textarea" id="biz-avoid" placeholder="e.g. don't mention competitor names, don't offer discounts..."></textarea>
+      </div>
+      <button class="save-btn" onclick="saveSettings()">Save settings</button>
+      <span id="save-msg" style="font-size:0.8rem;color:var(--accent);margin-left:1rem;display:none">Saved!</span>
+    </div>
+  </div>
+
+  <div id="page-replies" class="page">
+    <div class="page-header">
+      <h1>Recent replies</h1>
+      <p>All replies Sup has sent on your behalf.</p>
+    </div>
+    <div class="section">
+      <p style="color:#666;font-size:0.875rem;padding:1rem 0">No replies yet. Once Sup is connected to your Google Business, replies will appear here.</p>
+    </div>
+  </div>
+
+</main>
+
+<script>
+const SUPABASE_URL = 'https://pvupxjtnexpxgrdsvubv.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_SRqy9zb-Yd-uVG2D7qz-Ew_awQra4DJ';
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+async function init() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) {
+    window.location.href = 'auth.html';
+    return;
+  }
+  const email = session.user.email;
+  document.getElementById('user-email').textContent = email;
+  document.getElementById('avatar').textContent = email[0].toUpperCase();
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('sidebar').style.display = 'flex';
+  document.getElementById('main').style.display = 'block';
+  loadSettings(session.user.id);
+}
+
+async function loadSettings(userId) {
+  const { data } = await sb.from('settings').select('*').eq('user_id', userId).single();
+  if (data) {
+    document.getElementById('biz-name').value = data.business_name || '';
+    document.getElementById('biz-type').value = data.business_type || '';
+    document.getElementById('biz-tone').value = data.tone || '';
+    document.getElementById('biz-mention').value = data.always_mention || '';
+    document.getElementById('biz-avoid').value = data.never_say || '';
+  }
+}
+
+async function saveSettings() {
+  const { data: { session } } = await sb.auth.getSession();
+  const userId = session.user.id;
+  const payload = {
+    user_id: userId,
+    business_name: document.getElementById('biz-name').value,
+    business_type: document.getElementById('biz-type').value,
+    tone: document.getElementById('biz-tone').value,
+    always_mention: document.getElementById('biz-mention').value,
+    never_say: document.getElementById('biz-avoid').value,
+    updated_at: new Date().toISOString()
+  };
+  await sb.from('settings').upsert(payload, { onConflict: 'user_id' });
+  const msg = document.getElementById('save-msg');
+  msg.style.display = 'inline';
+  setTimeout(() => msg.style.display = 'none', 2000);
+}
+
+async function handleLogout() {
+  await sb.auth.signOut();
+  window.location.href = 'auth.html';
+}
+
+function showPage(page, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+init();
+</script>
+</body>
+</html>
