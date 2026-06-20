@@ -75,6 +75,7 @@ body{background:var(--black);color:var(--white);font-family:'Inter',sans-serif;d
   <div class="logo">Reply<span>Sup</span></div>
   <button class="nav-item active" onclick="showPage('dashboard',this)">📊 Dashboard</button>
   <button class="nav-item" onclick="showPage('settings',this)">⚙️ Settings</button>
+  <button class="nav-item" onclick="showPage('tryit',this)">🧪 Try it out</button>
   <button class="nav-item" onclick="showPage('replies',this)">💬 Recent replies</button>
   <div class="sidebar-bottom">
     <div class="user-pill">
@@ -162,6 +163,47 @@ body{background:var(--black);color:var(--white);font-family:'Inter',sans-serif;d
     </div>
   </div>
 
+  <div id="page-tryit" class="page">
+    <div class="page-header">
+      <h1>Try it out</h1>
+      <p>Write a fake review and see how Sup would reply, using your settings.</p>
+    </div>
+    <div class="section">
+      <div class="form-group">
+        <label class="form-label">Star rating</label>
+        <select class="form-select" id="test-stars">
+          <option value="5">★★★★★ (5 stars)</option>
+          <option value="4">★★★★☆ (4 stars)</option>
+          <option value="3">★★★☆☆ (3 stars)</option>
+          <option value="2">★★☆☆☆ (2 stars)</option>
+          <option value="1">★☆☆☆☆ (1 star)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Reviewer name (optional)</label>
+        <input type="text" class="form-input" id="test-name" placeholder="e.g. Mark, Sarah, anonymous...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Write a review</label>
+        <textarea class="form-textarea" id="test-review" placeholder="e.g. Boże jaka gówniana firma, czekałem 40 minut i nikt się nie zjawił..." style="min-height:100px"></textarea>
+        <div class="form-hint">Write it in any language and any tone. This won't be saved or sent anywhere real.</div>
+      </div>
+      <button class="save-btn" id="test-btn" onclick="testReply()">Generate Sup's reply</button>
+    </div>
+
+    <div class="section" id="test-result" style="display:none">
+      <div class="section-header"><div class="section-title">Sup's reply</div></div>
+      <div class="reply-item" style="border:none;padding:0">
+        <div class="reply-meta">
+          <span class="reply-reviewer" id="result-name">Reviewer</span>
+          <span class="stars" id="result-stars"></span>
+        </div>
+        <div class="reply-original" id="result-original"></div>
+        <div class="reply-sent" id="result-reply" style="margin-top:0.75rem;font-size:0.9rem"></div>
+      </div>
+    </div>
+  </div>
+
   <div id="page-replies" class="page">
     <div class="page-header">
       <h1>Recent replies</h1>
@@ -234,6 +276,47 @@ function showPage(page, btn) {
   document.getElementById('page-' + page).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   btn.classList.add('active');
+}
+
+async function testReply() {
+  const stars = document.getElementById('test-stars').value;
+  const name = document.getElementById('test-name').value || 'Anonymous';
+  const reviewText = document.getElementById('test-review').value;
+  if (!reviewText.trim()) {
+    alert('Write a review first!');
+    return;
+  }
+
+  const btn = document.getElementById('test-btn');
+  btn.disabled = true;
+  btn.textContent = 'Sup is thinking...';
+
+  const { data: { session } } = await sb.auth.getSession();
+  const { data: settings } = await sb.from('settings').select('*').eq('user_id', session.user.id).single();
+
+  const { data, error } = await sb.functions.invoke('test-reply', {
+    body: {
+      stars,
+      reviewerName: name,
+      reviewText,
+      settings: settings || {}
+    }
+  });
+
+  btn.disabled = false;
+  btn.textContent = 'Generate Sup\'s reply';
+
+  if (error) {
+    alert('Something went wrong. Make sure your business settings are saved first.');
+    return;
+  }
+
+  const starEmojis = '★'.repeat(stars) + '☆'.repeat(5 - stars);
+  document.getElementById('result-name').textContent = name;
+  document.getElementById('result-stars').textContent = starEmojis;
+  document.getElementById('result-original').textContent = '"' + reviewText + '"';
+  document.getElementById('result-reply').textContent = data.reply;
+  document.getElementById('test-result').style.display = 'block';
 }
 
 init();
