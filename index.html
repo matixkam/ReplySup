@@ -387,7 +387,10 @@
 
 <nav>
   <div class="logo" style="display:flex;align-items:center;gap:0.5rem;">Reply<span>Sup</span></div>
-  <a href="#early-access">Get early access</a>
+  <div style="display:flex;align-items:center;gap:1.5rem;">
+    <a href="auth.html" style="background:none;color:#aaa;padding:0;font-weight:500;">Sign in</a>
+    <a href="auth.html">Start free trial</a>
+  </div>
 </nav>
 
 <section class="hero">
@@ -405,13 +408,8 @@
   <h1>Never leave a<br>review <em>unanswered</em></h1>
   <p class="hero-sub">I keep an eye on your Google reviews around the clock and reply for you, in your tone, like a real person would. You set me up once, then forget I exist.</p>
 
-  <form class="signup-form" id="early-access" onsubmit="handleSubmit(event)">
-    <input type="email" placeholder="your@email.com" required id="emailInput">
-    <button type="submit">Get early access</button>
-  </form>
+  <a href="auth.html" style="display:inline-block;background:var(--accent);color:var(--black);padding:0.85rem 2rem;border-radius:100px;font-weight:600;font-size:0.95rem;text-decoration:none;">Start free trial</a>
   <p class="form-note">14-day free trial · No credit card needed</p>
-  <p class="success-msg" id="successMsg">✓ You're on the list! We'll be in touch soon.</p>
-  <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
 </section>
 
 <section class="demo-section">
@@ -506,30 +504,15 @@
       <li>Reply in any language</li>
       <li>Monthly review summary report</li>
     </ul>
-    <button class="cta-btn" onclick="document.getElementById('emailInput').focus(); document.querySelector('.hero').scrollIntoView({behavior:'smooth'})">
+    <a class="cta-btn" href="auth.html" style="display:block;text-align:center;text-decoration:none;">
       Start free trial
-    </button>
+    </a>
   </div>
 </section>
 
 <footer>
   © 2026 ReplySup · Built for busy business owners, with a little help from Sup
 </footer>
-
-<script>
-  function handleSubmit(e) {
-    e.preventDefault();
-    const email = document.getElementById('emailInput').value;
-    // Here you'd send to your email list (Mailchimp, etc.)
-    document.querySelector('.signup-form').style.display = 'none';
-    document.querySelector('.form-note').style.display = 'none';
-    document.getElementById('successMsg').style.display = 'block';
-    const googleFormUrl = 'https://docs.google.com/forms/d/e/1FAIpQLSctf2AGZEzq5LaXF13nF8TJHaSUaok6DSLXbek4ujYA0-SeTg/formResponse';
-    const formData = new FormData();
-    formData.append('entry.1326423822', email);
-    fetch(googleFormUrl, { method: 'POST', mode: 'no-cors', body: formData });
-  }
-</script>
 
 </body>
 </html>
