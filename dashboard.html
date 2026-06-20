@@ -188,7 +188,8 @@ body{background:var(--black);color:var(--white);font-family:'Inter',sans-serif;d
         <textarea class="form-textarea" id="test-review" placeholder="e.g. Boże jaka gówniana firma, czekałem 40 minut i nikt się nie zjawił..." style="min-height:100px"></textarea>
         <div class="form-hint">Write it in any language and any tone. This won't be saved or sent anywhere real.</div>
       </div>
-      <button class="save-btn" id="test-btn" onclick="testReply()">Generate Sup's reply</button>
+      <button class="save-btn" id="test-btn" onclick="testReply()" disabled style="opacity:0.4;cursor:not-allowed">Generate Sup's reply</button>
+      <p class="form-hint" id="test-btn-hint" style="margin-top:0.6rem">Finish your business name and tone in Settings first.</p>
     </div>
 
     <div class="section" id="test-result" style="display:none">
@@ -246,6 +247,24 @@ async function loadSettings(userId) {
     document.getElementById('biz-mention').value = data.always_mention || '';
     document.getElementById('biz-avoid').value = data.never_say || '';
   }
+  updateTestButtonState(data);
+}
+
+function updateTestButtonState(data) {
+  const btn = document.getElementById('test-btn');
+  const hint = document.getElementById('test-btn-hint');
+  const hasRequiredSettings = data && data.business_name && data.tone;
+  if (hasRequiredSettings) {
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    btn.style.cursor = 'pointer';
+    if (hint) hint.style.display = 'none';
+  } else {
+    btn.disabled = true;
+    btn.style.opacity = '0.4';
+    btn.style.cursor = 'not-allowed';
+    if (hint) hint.style.display = 'block';
+  }
 }
 
 async function saveSettings() {
@@ -261,6 +280,7 @@ async function saveSettings() {
     updated_at: new Date().toISOString()
   };
   await sb.from('settings').upsert(payload, { onConflict: 'user_id' });
+  updateTestButtonState(payload);
   const msg = document.getElementById('save-msg');
   msg.style.display = 'inline';
   setTimeout(() => msg.style.display = 'none', 2000);
